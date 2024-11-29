@@ -1,4 +1,5 @@
 package testBenchmark;
+
 import org.openjdk.jmh.annotations.*;
 
 import java.lang.management.ManagementFactory;
@@ -13,9 +14,9 @@ import java.util.concurrent.TimeUnit;
 @Warmup(iterations = 1, time = 1, timeUnit = TimeUnit.MILLISECONDS)
 @Measurement(iterations = 1, time = 1, timeUnit = TimeUnit.MILLISECONDS)
 @Fork(1)
-public class VectorizedMultiplicationTest {
+public class NormalMultiplicationTest{
 
-    @Param("1024")
+    @Param({"1024"})
     private int n;
 
     private double[][] a;
@@ -39,30 +40,22 @@ public class VectorizedMultiplicationTest {
     }
 
     @Benchmark
-    public void testSIMDMethod() {
+    public void testMethod() {
         for (int i = 0; i < n; i++) {
             for (int j = 0; j < n; j++) {
-                double sum = 0;
-                for (int k = 0; k < n; k += 4) {
-                    sum += simdDotProduct(a[i], b, k, j);
+                for (int k = 0; k < n; k++) {
+                    c[i][j] += a[i][k] * b[k][j];
                 }
-                c[i][j] = sum;
             }
         }
-        logSystemMetrics();
-    }
 
-    private double simdDotProduct(double[] row, double[][] matrix, int start, int column) {
-        double sum = 0;
-        for (int i = 0; i < 4 && (start + i) < row.length; i++) {
-            sum += row[start + i] * matrix[start + i][column];
-        }
-        return sum;
+        logSystemMetrics();
     }
 
     private void logSystemMetrics() {
         int cores = Runtime.getRuntime().availableProcessors();
         System.out.println("Number of cores used: " + cores);
+
         MemoryMXBean memoryBean = ManagementFactory.getMemoryMXBean();
         MemoryUsage heapUsage = memoryBean.getHeapMemoryUsage();
         long usedMemory = heapUsage.getUsed();
